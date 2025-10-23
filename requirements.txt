@@ -1,0 +1,8 @@
+transformers
+diffusers
+datasets
+accelerate
+sentencepiece
+matplotlib
+scikit-learn
+torchvision
