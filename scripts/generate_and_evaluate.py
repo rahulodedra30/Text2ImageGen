@@ -1,6 +1,7 @@
 """
 Image Generation and Evaluation Script
 Milestone 2: Generate samples and analyze results
+Compatible with train_quick_cpu.py
 """
 
 import os
@@ -20,19 +21,16 @@ from transformers import CLIPTokenizer, CLIPTextModel
 # ============================================================================
 
 class Config:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     
-    # Model paths
     model_name = "runwayml/stable-diffusion-v1-5"
     clip_model = "openai/clip-vit-large-patch14"
-    checkpoint_path = "checkpoints/unet_epoch_5.pt"  # Use your latest checkpoint
+    checkpoint_path = "checkpoints/unet_epoch_10.pt"
     
-    # Generation
-    num_inference_steps = 50
+    num_inference_steps = 30 
     guidance_scale = 7.5
     img_size = 256
     
-    # Paths
     samples_dir = "milestone2_samples"
     log_file = "train_log.csv"
     
@@ -68,7 +66,7 @@ def load_models():
     ).to(config.device)
     vae.eval()
     
-    # UNet (load trained checkpoint)
+    # UNet
     unet = UNet2DConditionModel.from_pretrained(
         config.model_name,
         subfolder="unet"
@@ -78,9 +76,9 @@ def load_models():
     if os.path.exists(config.checkpoint_path):
         checkpoint = torch.load(config.checkpoint_path, map_location=config.device)
         unet.load_state_dict(checkpoint['model_state_dict'])
-        print(f"  ✓ Loaded checkpoint from epoch {checkpoint['epoch']+1}")
+        print(f"   Loaded checkpoint from epoch {checkpoint['epoch']+1}")
     else:
-        print(f"  ⚠️  Checkpoint not found: {config.checkpoint_path}")
+        print(f"    Checkpoint not found: {config.checkpoint_path}")
         print("  Using base SD 1.5 weights instead")
     
     unet.eval()
@@ -91,7 +89,7 @@ def load_models():
         subfolder="scheduler"
     )
     
-    print("  ✓ All models loaded")
+    print("   All models loaded")
     return tokenizer, text_encoder, vae, unet, scheduler
 
 def get_text_embeddings(captions, tokenizer, text_encoder):
@@ -127,12 +125,10 @@ def generate_images(prompts, tokenizer, text_encoder, vae, unet, scheduler,
         # Random noise
         latents = torch.randn((1, 4, 32, 32), device=config.device)
         
-        # Set timesteps
         scheduler.set_timesteps(num_inference_steps)
         
         # Denoising loop
         for t in scheduler.timesteps:
-            # Expand for CFG
             latent_model_input = torch.cat([latents, latents])
             timestep = torch.tensor([t, t], device=config.device)
             text_input = torch.cat([uncond_embeds, text_embeds])
@@ -145,18 +141,14 @@ def generate_images(prompts, tokenizer, text_encoder, vae, unet, scheduler,
                 return_dict=False
             )[0]
             
-            # Apply guidance
             noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
             noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
             
-            # Denoise step
             latents = scheduler.step(noise_pred, t, latents).prev_sample
         
-        # Decode latents
         latents = latents / vae.config.scaling_factor
         image = vae.decode(latents).sample
         
-        # Convert to PIL
         image = (image / 2 + 0.5).clamp(0, 1)
         image = image.cpu().permute(0, 2, 3, 1).numpy()[0]
         image = (image * 255).astype(np.uint8)
@@ -200,7 +192,7 @@ def generate_baseline_samples(models):
     for i, (img, prompt) in enumerate(zip(generated_images, test_prompts)):
         img_path = os.path.join(config.samples_dir, f"sample_{i+1}.png")
         img.save(img_path)
-        print(f"  ✓ Saved: sample_{i+1}.png - '{prompt}'")
+        print(f"   Saved: sample_{i+1}.png - '{prompt}'")
     
     # Create grid
     fig, axes = plt.subplots(2, 5, figsize=(20, 8))
@@ -215,7 +207,7 @@ def generate_baseline_samples(models):
     grid_path = os.path.join(config.samples_dir, "generated_samples_grid.png")
     plt.savefig(grid_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  ✓ Grid saved: {grid_path}")
+    print(f"   Grid saved: {grid_path}")
     
     return generated_images, test_prompts
 
@@ -249,7 +241,7 @@ def test_guidance_scales(models, prompt="a dog playing in the park"):
     comp_path = os.path.join(config.samples_dir, "guidance_comparison.png")
     plt.savefig(comp_path, dpi=150)
     plt.close()
-    print(f"  ✓ Saved: {comp_path}")
+    print(f"   Saved: {comp_path}")
 
 def test_inference_steps(models, prompt="a cat sitting on a windowsill"):
     """Test different inference steps"""
@@ -281,12 +273,12 @@ def test_inference_steps(models, prompt="a cat sitting on a windowsill"):
     comp_path = os.path.join(config.samples_dir, "inference_steps_comparison.png")
     plt.savefig(comp_path, dpi=150)
     plt.close()
-    print(f"  ✓ Saved: {comp_path}")
+    print(f"   Saved: {comp_path}")
 
 def plot_training_loss():
     """Plot training loss curves"""
     if not os.path.exists(config.log_file):
-        print(f"\n⚠️  Training log not found: {config.log_file}")
+        print(f"\n  Training log not found: {config.log_file}")
         return
     
     print("\n" + "="*60)
@@ -319,7 +311,7 @@ def plot_training_loss():
     loss_path = os.path.join(config.samples_dir, "training_loss.png")
     plt.savefig(loss_path, dpi=150)
     plt.close()
-    print(f"  ✓ Saved: {loss_path}")
+    print(f"   Saved: {loss_path}")
     
     # Print statistics
     print("\n  Training Statistics:")
@@ -328,106 +320,6 @@ def plot_training_loss():
     print(f"    Final loss: {log_df['loss'].iloc[-1]:.4f}")
     print(f"    Average loss: {log_df['loss'].mean():.4f}")
     print(f"    Min loss: {log_df['loss'].min():.4f}")
-
-def create_summary_report():
-    """Create summary report"""
-    print("\n" + "="*60)
-    print("CREATING SUMMARY REPORT")
-    print("="*60)
-    
-    log_df = pd.read_csv(config.log_file) if os.path.exists(config.log_file) else None
-    
-    summary = f"""
-MILESTONE 2 SUMMARY REPORT
-Text-to-Image Generation with Stable Diffusion
-{'='*70}
-
-1. MODEL ARCHITECTURE
-   - Base Model: Stable Diffusion 1.5
-   - Text Encoder: CLIP ViT-Large (768 dimensions)
-   - UNet: 2D Conditional (Cross-attention with text)
-   - VAE: AutoencoderKL (latent compression)
-   - Scheduler: DDPM (Denoising Diffusion)
-
-2. TRAINING CONFIGURATION
-   - Device: {config.device}
-   - Batch size: 16
-   - Learning rate: 1e-5
-   - Epochs: 5
-   - Mixed precision: Enabled (FP16)
-   - Gradient accumulation: 2 steps
-   - Classifier-free guidance dropout: 15%
-
-3. TRAINING RESULTS
-"""
-    
-    if log_df is not None:
-        summary += f"""   - Total steps: {len(log_df)}
-   - Initial loss: {log_df['loss'].iloc[0]:.4f}
-   - Final loss: {log_df['loss'].iloc[-1]:.4f}
-   - Average loss: {log_df['loss'].mean():.4f}
-   - Min loss: {log_df['loss'].min():.4f}
-   - Loss reduction: {((log_df['loss'].iloc[0] - log_df['loss'].iloc[-1]) / log_df['loss'].iloc[0] * 100):.2f}%
-"""
-    
-    summary += f"""
-4. GENERATION PARAMETERS
-   - Inference steps: {config.num_inference_steps}
-   - Guidance scale: {config.guidance_scale}
-   - Image resolution: {config.img_size}x{config.img_size}
-   - Latent size: 32x32x4
-
-5. KEY OBSERVATIONS
-
-   a) Classifier-Free Guidance:
-      - Low (1.0-3.0): Creative but less prompt adherence
-      - Medium (5.0-7.5): Balanced quality and accuracy
-      - High (10.0+): Strong adherence, potential oversaturation
-
-   b) Inference Steps:
-      - 10 steps: Fast but lower quality
-      - 20-30 steps: Good quality-speed tradeoff
-      - 50 steps: Best quality baseline
-
-   c) Training Performance:
-      - Model successfully learns text-conditional generation
-      - Loss decreases steadily across epochs
-      - Generated images show scene composition understanding
-      - Better on simple prompts vs complex multi-object scenes
-
-   d) Challenges & Limitations:
-      - Fine details and object boundaries need improvement
-      - Multi-object scenes show lower coherence
-      - Some generated images contain artifacts
-      - Limited training data (20% Flickr30K subset)
-
-6. DELIVERABLES
-   ✓ Training script with GPU optimization
-   ✓ 10 baseline generated samples
-   ✓ Classifier-free guidance comparison
-   ✓ Inference steps analysis
-   ✓ Training loss visualization
-   ✓ Complete training logs
-
-7. NEXT STEPS (MILESTONE 3)
-   - Increase training epochs (10-15)
-   - Fine-tune with LoRA for efficiency
-   - Add quantitative metrics (FID, CLIP Score, IS)
-   - Test on diverse prompt categories
-   - Implement negative prompting
-   - Optimize inference pipeline
-
-{'='*70}
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Checkpoint: {config.checkpoint_path}
-"""
-    
-    summary_path = os.path.join(config.samples_dir, "milestone2_summary.txt")
-    with open(summary_path, 'w') as f:
-        f.write(summary)
-    
-    print(f"  ✓ Saved: {summary_path}")
-    print("\n" + summary)
 
 # ============================================================================
 # MAIN
@@ -438,32 +330,16 @@ def main():
     # Load models
     models = load_models()
     
-    # Generate baseline samples
     generate_baseline_samples(models)
-    
-    # Test guidance scales
     test_guidance_scales(models)
     
-    # Test inference steps
     test_inference_steps(models)
     
-    # Plot training loss
     plot_training_loss()
-    
-    # Create summary
-    create_summary_report()
     
     print("\n" + "="*60)
     print("EVALUATION COMPLETE!")
     print("="*60)
-    print(f"\n✓ All outputs saved to: {config.samples_dir}/")
-    print("\nSubmission checklist:")
-    print("  1. Training log: train_log.csv")
-    print("  2. Generated images: milestone2_samples/sample_*.png")
-    print("  3. Visualizations: milestone2_samples/*.png")
-    print("  4. Summary report: milestone2_samples/milestone2_summary.txt")
-    print("  5. Training script: train_text2img_gpu.py")
-    print("  6. This script: generate_and_evaluate.py")
 
 if __name__ == "__main__":
     main()

@@ -32,7 +32,7 @@ class Config:
     
     # Training 
     batch_size = 4
-    num_epochs = 2
+    num_epochs = 10
     learning_rate = 2e-5
     gradient_accumulation_steps = 4
     
@@ -42,11 +42,11 @@ class Config:
     
     # Data
     dataset_name = "lmms-lab/flickr30k"
-    dataset_split = "test[:12%]"
+    dataset_split = "test[:25%]"
     img_size = 256
     min_caption_len = 5
     max_caption_len = 50
-    max_train_samples = 2000
+    max_train_samples = 5000
     
     # Paths
     checkpoint_dir = "checkpoints"
