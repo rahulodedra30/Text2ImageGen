@@ -1,9 +1,3 @@
-"""
-Image Generation and Evaluation Script
-Milestone 2: Generate samples and analyze results
-Compatible with train_quick_cpu.py
-"""
-
 import os
 import torch
 import numpy as np

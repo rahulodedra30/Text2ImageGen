@@ -1,8 +1,3 @@
-"""
-Quick CPU Training Script 
-For P100 GPU compatibility issues
-"""
-
 import os
 import re
 import torch
