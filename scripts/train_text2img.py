@@ -30,7 +30,7 @@ class Config:
     model_name = "runwayml/stable-diffusion-v1-5"
     clip_model = "openai/clip-vit-large-patch14"
     
-    # Training - REDUCED FOR SPEED
+    # Training 
     batch_size = 4
     num_epochs = 2
     learning_rate = 2e-5
@@ -40,13 +40,13 @@ class Config:
     guidance_prob = 0.15
     null_token = ""
     
-    # Data - USE LESS DATA
+    # Data
     dataset_name = "lmms-lab/flickr30k"
-    dataset_split = "test[:5%]"  # Only 5% for quick training
+    dataset_split = "test[:12%]"
     img_size = 256
     min_caption_len = 5
     max_caption_len = 50
-    max_train_samples = 1000  # Limit training samples
+    max_train_samples = 2000
     
     # Paths
     checkpoint_dir = "checkpoints"
@@ -54,7 +54,7 @@ class Config:
     log_file = "train_log.csv"
     
     # Generation
-    num_inference_steps = 30  # Reduced for speed
+    num_inference_steps = 30
     guidance_scale = 7.5
     
     def __init__(self):
@@ -64,7 +64,7 @@ class Config:
 config = Config()
 
 print("="*60)
-print("QUICK CPU TRAINING - REDUCED DATASET")
+print("CPU TRAINING")
 print("="*60)
 print(f"Device: {config.device}")
 print(f"Dataset: {config.dataset_split}")
@@ -179,7 +179,7 @@ def load_models():
         subfolder="scheduler"
     )
     
-    print(f"  ✓ All models loaded")
+    print(f"  All models loaded")
     return tokenizer, text_encoder, vae, unet, scheduler
 
 def get_text_embeddings(captions, tokenizer, text_encoder):
@@ -214,12 +214,10 @@ def train_epoch(epoch, train_loader, unet, vae, text_encoder, tokenizer, schedul
         captions = batch['caption']
         batch_size = images.size(0)
         
-        # Encode images
         with torch.no_grad():
             latents = vae.encode(images).latent_dist.sample()
             latents = latents * vae.config.scaling_factor
         
-        # Add noise
         noise = torch.randn_like(latents)
         timesteps = torch.randint(
             0, 
@@ -229,10 +227,8 @@ def train_epoch(epoch, train_loader, unet, vae, text_encoder, tokenizer, schedul
         )
         noisy_latents = scheduler.add_noise(latents, noise, timesteps)
         
-        # Get text embeddings
         text_embeds = get_text_embeddings(captions, tokenizer, text_encoder)
         
-        # Classifier-free guidance
         if torch.rand(1).item() < config.guidance_prob:
             uncond_embeds = get_text_embeddings(
                 [config.null_token] * batch_size,
@@ -256,42 +252,31 @@ def train_epoch(epoch, train_loader, unet, vae, text_encoder, tokenizer, schedul
             return_dict=False
         )[0]
         
-        # Apply guidance
         if noise_pred.shape[0] == 2 * batch_size:
             noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
             noise_pred = noise_pred_uncond + config.guidance_scale * (
                 noise_pred_text - noise_pred_uncond
             )
         
-        # Compute loss
         loss = F.mse_loss(noise_pred, noise)
         loss = loss / config.gradient_accumulation_steps
         
-        # Backward
         loss.backward()
         
-        # Gradient accumulation
         if (step + 1) % config.gradient_accumulation_steps == 0:
             optimizer.step()
             optimizer.zero_grad()
         
-        # Track loss
         epoch_losses.append(loss.item() * config.gradient_accumulation_steps)
         progress_bar.set_postfix({"loss": f"{epoch_losses[-1]:.4f}"})
     
     return epoch_losses
 
 def train():
-    # Load data
     train_loader, train_pairs, val_pairs = load_data()
-    
-    # Load models
     tokenizer, text_encoder, vae, unet, scheduler = load_models()
-    
-    # Setup optimizer
     optimizer = torch.optim.AdamW(unet.parameters(), lr=config.learning_rate)
     
-    # Training loop
     print("\n" + "="*60)
     print("STARTING TRAINING")
     print("="*60)
@@ -306,7 +291,6 @@ def train():
             tokenizer, scheduler, optimizer
         )
         
-        # Save losses
         for step, loss in enumerate(epoch_losses):
             all_losses.append({
                 'epoch': epoch,
@@ -314,7 +298,6 @@ def train():
                 'loss': loss
             })
         
-        # Save checkpoint
         checkpoint_path = os.path.join(
             config.checkpoint_dir, 
             f"unet_epoch_{epoch+1}.pt"
@@ -327,10 +310,9 @@ def train():
         }, checkpoint_path)
         print(f"✓ Checkpoint saved: {checkpoint_path}")
     
-    # Save training log
     log_df = pd.DataFrame(all_losses)
     log_df.to_csv(config.log_file, index=False)
-    print(f"\n✓ Training log saved: {config.log_file}")
+    print(f"\n Training log saved: {config.log_file}")
     
     print("\n" + "="*60)
     print("TRAINING COMPLETE!")
@@ -340,5 +322,5 @@ def train():
 
 if __name__ == "__main__":
     train()
-    print("\n✓ training completed!")
-    print("✓ Now run: python generate_and_evaluate.py")
+    print("\n training completed!")
+    print(" Now run: python generate_and_evaluate.py")
