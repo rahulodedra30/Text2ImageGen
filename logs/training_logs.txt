@@ -1,0 +1,33 @@
+Epoch 1 Summary:
+  Average Loss: 0.1935
+  Time: 106.50 minutes
+  Steps/sec: 0.08
+
+Epoch 2/6
+Learning rate: 0.000019
+Epoch 2/6: 100%|█████████████████████████████████████████████████████████████████████████████| 500/500 [1:46:02<00:00, 12.73s/it, loss=0.1418, avg_loss=0.1838]
+
+Epoch 2 Summary:
+  Average Loss: 0.1801
+  Time: 106.05 minutes
+  Steps/sec: 0.08
+   Checkpoint saved: checkpoints/unet_epoch_2.pt
+
+Epoch 3/6
+Learning rate: 0.000015
+Epoch 3/6: 100%|█████████████████████████████████████████████████████████████████████████████| 500/500 [1:47:36<00:00, 12.91s/it, loss=0.0556, avg_loss=0.1741]
+
+Epoch 3 Summary:
+  Average Loss: 0.1797
+  Time: 107.61 minutes
+  Steps/sec: 0.08
+
+Epoch 4/6
+Learning rate: 0.000010
+Epoch 4/6: 100%|█████████████████████████████████████████████████████████████████████████████| 500/500 [1:47:48<00:00, 12.94s/it, loss=0.2226, avg_loss=0.1832]
+
+Epoch 4 Summary:
+  Average Loss: 0.1826
+  Time: 107.82 minutes
+  Steps/sec: 0.08
+   Checkpoint saved: checkpoints/unet_epoch_4.pt
