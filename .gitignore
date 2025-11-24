@@ -1,2 +1,4 @@
 logs/
 scripts/images_generated/
+.DS_Store
+scripts/.DS_Store
