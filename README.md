@@ -71,6 +71,7 @@ TEXT2IMAGEGEN/
 
 ---
 
+
 ## Technical Specifications
 
 ### Model Architecture
@@ -120,6 +121,105 @@ TEXT2IMAGEGEN/
 - Optimal: **30-50 steps** for quality-speed balance
 - 10 steps: Too noisy
 - 50 steps: Best quality but 4× slower than 30 steps
+
+---
+# Milestone 3 
+
+### Milestone 3 Goals
+
+- Generate a consistent evaluation dataset  
+- Compute **FID** and **Inception Score**  
+- Compare real vs generated images  
+- Fully analyze the notebook workflow  
+- Document model performance limitations  
+- Plan improvements for the final milestone  
+
+---
+
+## 🧪 1. Quantitative Evaluation
+
+### **Computed Metrics (100 generated vs Flickr30k images)**
+
+| Metric | Value |
+|--------|--------|
+| **FID** | ~380 |
+| **Inception Score** | ~3 |
+
+### Interpretation
+- **High FID** → Generated images differ greatly from real images  
+- **Low IS** → Low diversity, weak semantic meaning  
+- Expected due to:  
+  - Small dataset (2,000 samples)  
+  - Only 4 epochs  
+  - CPU-only training  
+  - 256×256 resolution  
+
+---
+
+### 🖼 2. Qualitative Evaluation
+
+### **Real vs Generated Image Comparison**  
+
+This figure compares real Flickr30k images with images generated from the same captions.  
+The real images show clean composition and clear subjects.  
+Generated images show distortion, poor object boundaries, and noise — matching the FID/IS scores.
+
+---
+
+## 📈 3. Milestone 3 Results Summary
+
+### **Model Performance**
+- Recognizable structures  
+- Strong color matching  
+- Very poor anatomy & boundaries  
+- Blurred objects  
+- Weak semantic alignment  
+
+### **CFG Behavior**
+- Best scale remains **7.5**  
+- Lower = poor alignment  
+- Higher = oversaturation  
+
+---
+
+## 🔧 4. Limitations Identified
+
+- CPU-only training = extremely slow  
+- Small dataset = poor generalization  
+- 256×256 resolution = low visual detail  
+- Only 4 epochs = severely undertrained  
+- Limited CLIP guidance  
+- No LoRA or memory-efficient fine-tuning  
+
+---
+
+## 🚀 5. Next Steps (Before Final Milestone)
+
+### ✔ Training Upgrades
+- Expand dataset to **4k–5k samples**  
+- Train for **20–30 epochs**  
+- Use **LoRA fine-tuning**  
+
+### ✔ Sampling Enhancements
+- Use **Euler**, **DPM++**, or DDIM  
+- Increase inference steps (50–100)  
+
+### ✔ Evaluation Improvements
+- Add **CLIP Score**  
+- Add **Precision/Recall** metrics  
+- Add side-by-side prompt comparison charts  
+
+### ✔ Output Quality Improvements
+- Explore **512×512** training  
+- Use caption engineering templates  
+
+---
+
+## 🏁 6. Conclusion
+
+Milestone 3 completes the evaluation phase of Text2ImageGen.  
+Although the model still produces distorted images, the evaluation pipeline is now fully established.  
+This milestone lays the groundwork for major improvements in the final stage.
 
 ---
 
