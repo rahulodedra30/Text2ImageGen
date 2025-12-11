@@ -193,36 +193,6 @@ Generated images show distortion, poor object boundaries, and noise — matching
 
 ---
 
-## 🚀 5. Next Steps (Before Final Milestone)
-
-### ✔ Training Upgrades
-- Expand dataset to **4k–5k samples**  
-- Train for **20–30 epochs**  
-- Use **LoRA fine-tuning**  
-
-### ✔ Sampling Enhancements
-- Use **Euler**, **DPM++**, or DDIM  
-- Increase inference steps (50–100)  
-
-### ✔ Evaluation Improvements
-- Add **CLIP Score**  
-- Add **Precision/Recall** metrics  
-- Add side-by-side prompt comparison charts  
-
-### ✔ Output Quality Improvements
-- Explore **512×512** training  
-- Use caption engineering templates  
-
----
-
-## 🏁 6. Conclusion
-
-Milestone 3 completes the evaluation phase of Text2ImageGen.  
-Although the model still produces distorted images, the evaluation pipeline is now fully established.  
-This milestone lays the groundwork for major improvements in the final stage.
-
----
-
 ## Dependencies
 
 Core packages:
